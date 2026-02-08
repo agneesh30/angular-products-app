@@ -3,6 +3,10 @@ substitutions:
   _REGION: us-central1
   _REPOSITORY: my-repo
 
+options:
+  logging: CLOUD_LOGGING_ONLY
+  substitutionOption: 'ALLOW_LOOSE'
+
 steps:
   # Build Docker image (this does npm install + build inside)
   - name: 'gcr.io/cloud-builders/docker'
