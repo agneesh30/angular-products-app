@@ -1,0 +1,48 @@
+<div class="container">
+  <header>
+    <h1>🛍️ Product Catalog</h1>
+    <p class="subtitle">Full-Stack Application: Angular + Spring Boot</p>
+    <div class="health-status" [class.healthy]="healthStatus().includes('✅')">
+      {{ healthStatus() }}
+    </div>
+  </header>
+
+  <div class="actions">
+    <button (click)="refresh()" class="btn-primary">🔄 Refresh</button>
+  </div>
+
+  @if (productsResource.isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading products...</p>
+    </div>
+  }
+
+  @if (productsResource.error()) {
+    <div class="error">
+      Failed to load products. Please try again.
+    </div>
+  }
+
+  @if (productsResource.hasValue()) {
+    <div class="products-grid">
+      @for (product of productsResource.value(); track product.id) {
+        <div class="product-card" (click)="viewProduct(product.id)">
+          <div class="product-header">
+            <h3>{{ product.name }}</h3>
+            <span class="category">{{ product.category }}</span>
+          </div>
+          <p class="description">{{ product.description }}</p>
+          <div class="product-footer">
+            <span class="price">${{ product.price.toFixed(2) }}</span>
+            <button class="btn-view">View Details →</button>
+          </div>
+        </div>
+      } @empty {
+        <div class="empty">
+          <p>No products available</p>
+        </div>
+      }
+    </div>
+  }
+</div>

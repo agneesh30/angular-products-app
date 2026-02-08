@@ -1,0 +1,47 @@
+<div class="container">
+  <button (click)="goBack()" class="btn-back">← Back to Products</button>
+
+  @if (productResource.isLoading()) {
+    <div class="loading">
+      <div class="spinner"></div>
+      <p>Loading product details...</p>
+    </div>
+  }
+
+  @if (productResource.error()) {
+    <div class="error">
+      Failed to load product details.
+    </div>
+  }
+
+  @if (productResource.value(); as product) {
+    <div class="product-detail">
+      <div class="product-header">
+        <h1>{{ product.name }}</h1>
+        <span class="category">{{ product.category }}</span>
+      </div>
+      
+      <div class="product-info">
+        <div class="info-row">
+          <span class="label">Product ID:</span>
+          <span class="value">{{ product.id }}</span>
+        </div>
+        
+        <div class="info-row">
+          <span class="label">Description:</span>
+          <span class="value">{{ product.description }}</span>
+        </div>
+        
+        <div class="info-row">
+          <span class="label">Category:</span>
+          <span class="value">{{ product.category }}</span>
+        </div>
+        
+        <div class="info-row price-row">
+          <span class="label">Price:</span>
+          <span class="price">${{ product.price.toFixed(2) }}</span>
+        </div>
+      </div>
+    </div>
+  }
+</div>
