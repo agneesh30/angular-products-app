@@ -8,6 +8,7 @@ substitutions:
   _MIN_INSTANCES: '0'
 
 options:
+  machineType: 'N1_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
 
 steps:
@@ -44,33 +45,22 @@ steps:
   # ==================== BUILD DOCKER IMAGE ====================
   - name: 'gcr.io/cloud-builders/docker'
     id: 'docker-build'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        echo "=================================="
-        echo "🐳 BUILDING DOCKER IMAGE"
-        echo "=================================="
-        docker build \
-          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA \
-          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest \
-          .
-        echo "✅ Docker image built"
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest'
+      - '.'
     waitFor: ['build']
 
-  # ==================== PUSH DOCKER IMAGE ====================
+  # ==================== PUSH TO ARTIFACT REGISTRY ====================
   - name: 'gcr.io/cloud-builders/docker'
     id: 'docker-push'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        echo "=================================="
-        echo "📤 PUSHING TO ARTIFACT REGISTRY"
-        echo "=================================="
-        docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA
-        docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest
-        echo "✅ Images pushed successfully"
+      - 'push'
+      - '--all-tags'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}'
     waitFor: ['docker-build']
 
   # ==================== DEPLOY TO CLOUD RUN ====================
@@ -98,8 +88,6 @@ steps:
       - '${_MAX_INSTANCES}'
       - '--port'
       - '8080'
-      - '--set-env-vars'
-      - 'NODE_ENV=production'
     waitFor: ['docker-push']
 
   # ==================== VERIFY DEPLOYMENT ====================
@@ -122,7 +110,6 @@ steps:
         echo "Frontend URL: $$URL"
         echo ""
         
-        echo "Testing health endpoint..."
         HTTP_CODE=$$(curl -s -o /dev/null -w "%{http_code}" $$URL/health)
         
         if [ $$HTTP_CODE -eq 200 ]; then
@@ -133,19 +120,15 @@ steps:
         
         echo ""
         echo "========================================="
-        echo "🎉 FRONTEND DEPLOYMENT COMPLETE"
+        echo "🎉 DEPLOYMENT COMPLETE"
         echo "========================================="
         echo ""
-        echo "🌐 Frontend URL: $$URL"
-        echo ""
-        echo "📋 Next Steps:"
-        echo "   1. Open the URL in your browser"
-        echo "   2. Verify the application loads"
-        echo "   3. Check backend connectivity"
+        echo "🌐 Application URL: $$URL"
         echo ""
         echo "========================================="
     waitFor: ['deploy']
 
+# Images to push to Artifact Registry
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA'
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest'
@@ -156,4 +139,3 @@ tags:
   - 'frontend'
   - 'angular'
   - 'cloud-run'
-  - 'angular-products-app'
