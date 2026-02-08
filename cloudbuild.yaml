@@ -9,10 +9,7 @@ substitutions:
   _TIMEOUT: 300s
 
 options:
-  # Logging configuration
   logging: CLOUD_LOGGING_ONLY
-  
-  # Dynamic substitutions
   substitutionOption: 'ALLOW_LOOSE'
 
 steps:
@@ -73,8 +70,7 @@ steps:
         echo "=================================="
         echo "📤 PUSHING TO ARTIFACT REGISTRY"
         echo "=================================="
-        docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA
-        docker push ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest
+        docker push --all-tags ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}
         echo "✅ Images pushed successfully"
     waitFor: ['docker-build']
 
