@@ -8,7 +8,6 @@ substitutions:
   _MIN_INSTANCES: '0'
 
 options:
-  machineType: 'N1_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
 
 steps:
