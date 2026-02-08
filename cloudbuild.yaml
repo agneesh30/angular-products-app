@@ -2,154 +2,37 @@ substitutions:
   _SERVICE_NAME: angular-products-app
   _REGION: us-central1
   _REPOSITORY: my-repo
-  _MEMORY: 256Mi
-  _CPU: '1'
-  _MAX_INSTANCES: '10'
-  _MIN_INSTANCES: '0'
-  _TIMEOUT: 300s
-
-options:
-  logging: CLOUD_LOGGING_ONLY
-  substitutionOption: 'ALLOW_LOOSE'
 
 steps:
-  # ==================== INSTALL DEPENDENCIES ====================
-  - name: 'node:20-alpine'
-    id: 'install'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        echo "=================================="
-        echo "📦 INSTALLING DEPENDENCIES"
-        echo "=================================="
-        npm ci --legacy-peer-deps
-        echo "✅ Dependencies installed"
-
-  # ==================== BUILD ANGULAR APP ====================
-  - name: 'node:20-alpine'
-    id: 'build'
-    entrypoint: 'sh'
-    args:
-      - '-c'
-      - |
-        echo "=================================="
-        echo "🔨 BUILDING ANGULAR APPLICATION"
-        echo "=================================="
-        npm run build
-        echo ""
-        echo "📊 Build output:"
-        ls -lh dist/
-        echo "✅ Build completed successfully"
-    waitFor: ['install']
-
-  # ==================== BUILD DOCKER IMAGE ====================
+  # Build Docker image (this does npm install + build inside)
   - name: 'gcr.io/cloud-builders/docker'
     id: 'docker-build'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        echo "=================================="
-        echo "🐳 BUILDING DOCKER IMAGE"
-        echo "=================================="
-        docker build \
-          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA \
-          -t ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest \
-          .
-        echo "✅ Docker image built"
-    waitFor: ['build']
+      - 'build'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA'
+      - '-t'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest'
+      - '.'
 
-  # ==================== PUSH DOCKER IMAGE ====================
+  # Push to Artifact Registry
   - name: 'gcr.io/cloud-builders/docker'
     id: 'docker-push'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        echo "=================================="
-        echo "📤 PUSHING TO ARTIFACT REGISTRY"
-        echo "=================================="
-        docker push --all-tags ${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}
-        echo "✅ Images pushed successfully"
-    waitFor: ['docker-build']
+    args: ['push', '--all-tags', '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}']
 
-  # ==================== DEPLOY TO CLOUD RUN ====================
+  # Deploy to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
     id: 'deploy'
-    entrypoint: 'bash'
     args:
-      - '-c'
-      - |
-        echo "=================================="
-        echo "☁️  DEPLOYING TO CLOUD RUN"
-        echo "=================================="
-        gcloud run deploy ${_SERVICE_NAME} \
-          --image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA \
-          --region=${_REGION} \
-          --platform=managed \
-          --allow-unauthenticated \
-          --min-instances=${_MIN_INSTANCES} \
-          --max-instances=${_MAX_INSTANCES} \
-          --memory=${_MEMORY} \
-          --cpu=${_CPU} \
-          --timeout=${_TIMEOUT} \
-          --port=8080
-        echo "✅ Deployment completed"
-    waitFor: ['docker-push']
-
-  # ==================== VERIFY DEPLOYMENT ====================
-  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
-    id: 'verify'
-    entrypoint: 'bash'
-    args:
-      - '-c'
-      - |
-        echo "=================================="
-        echo "🧪 VERIFYING DEPLOYMENT"
-        echo "=================================="
-        
-        sleep 15
-        
-        URL=$$(gcloud run services describe ${_SERVICE_NAME} \
-          --region ${_REGION} \
-          --format='value(status.url)')
-        
-        echo "Frontend URL: $$URL"
-        echo ""
-        
-        echo "Testing health endpoint..."
-        HTTP_CODE=$$(curl -s -o /dev/null -w "%{http_code}" $$URL/health)
-        
-        if [ $$HTTP_CODE -eq 200 ]; then
-          echo "✅ Health check PASSED (HTTP $$HTTP_CODE)"
-        else
-          echo "⚠️  Health check returned HTTP $$HTTP_CODE"
-        fi
-        
-        echo ""
-        echo "========================================="
-        echo "🎉 FRONTEND DEPLOYMENT COMPLETE"
-        echo "========================================="
-        echo ""
-        echo "🌐 Frontend URL: $$URL"
-        echo ""
-        echo "📋 Next Steps:"
-        echo "   1. Open the URL in your browser"
-        echo "   2. Verify the application loads"
-        echo "   3. Check backend connectivity"
-        echo ""
-        echo "========================================="
-    waitFor: ['deploy']
+      - 'gcloud'
+      - 'run'
+      - 'deploy'
+      - '${_SERVICE_NAME}'
+      - '--image=${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA'
+      - '--region=${_REGION}'
+      - '--platform=managed'
+      - '--allow-unauthenticated'
 
 images:
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:$SHORT_SHA'
   - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_REPOSITORY}/${_SERVICE_NAME}:latest'
-
-timeout: 1200s
-
-tags:
-  - 'frontend'
-  - 'angular'
-  - 'cloud-run'
-  - 'angular-products-app'
