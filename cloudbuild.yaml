@@ -9,7 +9,11 @@ substitutions:
   _TIMEOUT: 300s
 
 options:
+  # Logging configuration
   logging: CLOUD_LOGGING_ONLY
+  
+  # Dynamic substitutions
+  substitutionOption: 'ALLOW_LOOSE'
 
 steps:
   # ==================== INSTALL DEPENDENCIES ====================
