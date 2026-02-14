@@ -4,7 +4,7 @@ import { Observable } from 'rxjs';
 import { Product } from '../models/product.model';
 
 // Replace with your actual backend URL from Cloud Run
-const API_URL = 'https://demo-app-1040106103896.us-central1.run.app/api';
+const API_URL = 'https://demo-app-149056105851.us-central1.run.app/api';
 
 @Injectable({
   providedIn: 'root'
